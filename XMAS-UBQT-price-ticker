@@ -32,7 +32,7 @@
 
         .ticker-content {
             display: inline-block;
-            animation: scroll-left 15s linear infinite;
+            animation: scroll-left 25s linear infinite;
             font-size: 1.2rem;
             color: #8ac926; /* Christmas green */
         }
@@ -63,10 +63,16 @@
     </style>
 </head>
 <body>
+    <!-- Christmas Music Background -->
+    <audio autoplay loop>
+        <source src="your-christmas-music-file.mp3" type="audio/mp3">
+        Your browser does not support the audio element.
+    </audio>
+
     <div class="ticker" id="ticker">
         <span class="ticker-content" id="ticker-content">
             <span id="ticker-text">Loading...</span>
-            <span class="disclaimer">Disclaimer: Data is updated every 30 seconds. For 3X/4X bonuses, sign up for the <a href="https://nftitlenetwork.com/ubqt-private-placement" target="_blank">Private Placement</a>.</span>
+            <span class="disclaimer">Disclaimer: Data is updated every 30 seconds. For 3X/4X bonuses, sign up for our lucrative <a href="https://nftitlenetwork.com/ubqt-private-placement" target="_blank"><U>Private Placement</U></a>. Buy $UBQT on Alcor Exchange by <a href="https://proton.alcor.exchange/trade/ubqt-ubitquityllc_xpr-eosio.token" target="_blank"><U>clicking here</U></a>.</span>
         </span>
     </div>
 
@@ -114,5 +120,6 @@
         // Update the ticker every 30 seconds
         setInterval(updateTicker, 30000);
     </script>
+
 </body>
 </html>
