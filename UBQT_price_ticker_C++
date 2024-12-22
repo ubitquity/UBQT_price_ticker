@@ -1,0 +1,110 @@
+#include <iostream>
+#include <string>
+#include <thread>
+#include <chrono>
+#include <iomanip>
+#include <sstream>
+#include <curl/curl.h>
+
+// Function to handle API response
+size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* out) {
+    size_t totalSize = size * nmemb;
+    out->append((char*)contents, totalSize);
+    return totalSize;
+}
+
+// Function to fetch data from a URL
+std::string fetchUrl(const std::string& url) {
+    CURL* curl;
+    CURLcode res;
+    std::string response;
+
+    curl = curl_easy_init();
+    if (curl) {
+        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
+        res = curl_easy_perform(curl);
+        if (res != CURLE_OK) {
+            std::cerr << "CURL error: " << curl_easy_strerror(res) << std::endl;
+        }
+        curl_easy_cleanup(curl);
+    }
+    return response;
+}
+
+// Function to simulate a scrolling ticker
+void scrollTicker(const std::string& text, int delayMs) {
+    const int width = 50; // Width of the display area
+    std::string buffer = text + std::string(width, ' ');
+
+    while (true) {
+        // Display the first `width` characters of the buffer
+        std::cout << "\r" << buffer.substr(0, width) << std::flush;
+
+        // Rotate the buffer to the left
+        char firstChar = buffer[0];
+        buffer.erase(0, 1);
+        buffer.push_back(firstChar);
+
+        // Wait for the next frame
+        std::this_thread::sleep_for(std::chrono::milliseconds(delayMs));
+    }
+}
+
+int main() {
+    const std::string ubqtApiUrl = "https://proton.alcor.exchange/api/v2/tickers/ubqt-ubitquityllc_xpr-eosio.token";
+    const std::string xprToUsdApiUrl = "https://api.coingecko.com/api/v3/simple/price?ids=proton&vs_currencies=usd";
+
+    while (true) {
+        try {
+            // Fetch UBQT/XPR price
+            std::string ubqtResponse = fetchUrl(ubqtApiUrl);
+            if (ubqtResponse.empty()) {
+                throw std::runtime_error("Failed to fetch UBQT/XPR data.");
+            }
+
+            // Parse the UBQT/XPR price (simple manual parsing for demonstration)
+            double lastPrice = 0.0; // Example: extract "last_price" from JSON
+            size_t pricePos = ubqtResponse.find("last_price":);
+            if (pricePos != std::string::npos) {
+                std::istringstream iss(ubqtResponse.substr(pricePos + 12));
+                iss >> lastPrice;
+            }
+
+            // Fetch XPR/USD price
+            std::string xprResponse = fetchUrl(xprToUsdApiUrl);
+            if (xprResponse.empty()) {
+                throw std::runtime_error("Failed to fetch XPR/USD data.");
+            }
+
+            // Parse the XPR/USD price
+            double xprToUsd = 0.0; // Example: extract "proton.usd" from JSON
+            size_t usdPos = xprResponse.find("proton":);
+            if (usdPos != std::string::npos) {
+                size_t startPos = xprResponse.find("usd", usdPos) + 5;
+                std::istringstream iss(xprResponse.substr(startPos));
+                iss >> xprToUsd;
+            }
+
+            // Calculate UBQT/USD price
+            double ubqtToUsd = lastPrice * xprToUsd;
+            std::ostringstream displayText;
+            displayText << std::fixed << std::setprecision(6)
+                        << "\uD83C\uDF84 UBQT/XPR: " << lastPrice
+                        << " (USD: $" << ubqtToUsd << ") \uD83C\uDF85";
+
+            // Start scrolling ticker
+            scrollTicker(displayText.str(), 100);
+
+        } catch (const std::exception& e) {
+            std::cerr << "Error: " << e.what() << std::endl;
+            scrollTicker("\u2744\uFE0F Error fetching data. Please try again later. \uD83C\uDF81", 100);
+        }
+
+        // Update every 30 seconds
+        std::this_thread::sleep_for(std::chrono::seconds(30));
+    }
+
+    return 0;
+}
